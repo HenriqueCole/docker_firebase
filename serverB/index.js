@@ -2,57 +2,50 @@ const nodeFetch = require("node-fetch");
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3001;
+const crud = require("../crud/index.js");
 
 app.use(express.json());
 
-const productList = [
-  {
-    id: 1,
-    productName: "Apple",
-    price: 1,
-    username: "cole",
-    password: "123",
-  },
-];
-
 app.post("/product-register", async (req, res) => {
   const product = await registerProduct(
-    req.body.productName,
+    req.body.description,
+    req.body.name,
+    req.body.password,
     req.body.price,
-    req.body.username,
-    req.body.password
+    req.body.userCPF
   );
-  res.json(product);
+  if (product) {
+    res.send(product);
+  } else {
+    res.send("User not found");
+  }
 });
 
-async function registerProduct(productName, price, username, password) {
-  const user = await checkLogin(username, password);
-  console.log("USER: ", user);
+async function registerProduct(description, name, password, price, userCPF) {
+  const user = await checkLogin(name, password);
   if (user) {
     const product = {
-      id: productList.length + 1,
-      productName: productName,
+      description: description,
+      name: name,
       price: price,
-      username: username,
-      password: password,
+      userCPF: userCPF,
     };
-    productList.push(product);
-    return product;
+    const savedProduct = await crud.post("Products", null, product);
+    return savedProduct;
   } else {
-    return "User not found";
+    return false;
   }
 }
 
-async function checkLogin(username, password) {
+async function checkLogin(name, password) {
   const requisition = await nodeFetch("http://localhost:3000/user-list", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
     },
   }).then((response) => response.json());
-  console.log("REQUISITION: ", requisition);
   const user = requisition.find(
-    (user) => user.username == username && user.password == password
+    (user) => user.Name == name && user.Password == password
   );
   if (user) {
     return user;

@@ -1,53 +1,53 @@
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
+const crud = require("../crud/index.js");
 
 app.use(express.json());
 
-const userList = [
-  {
-    id: 1,
-    username: "cole",
-    password: "123",
-  },
-];
-
-app.post("/user-register", (req, res) => {
+app.post("/user-register", async (req, res) => {
   console.log(req.body);
-  const user = registerUser(req.body.username, req.body.password);
+  const user = await registerUser(
+    req.body.CPF,
+    req.body.Name,
+    req.body.Password
+  );
   res.send(user);
 });
 
-function registerUser(username, password) {
+async function registerUser(CPF, Name, Password) {
   const user = {
-    id: userList.length + 1,
-    username: username,
-    password: password,
+    CPF: CPF,
+    Name: Name,
+    Password: Password,
   };
-  userList.push(user);
-  return user;
+  const savedUser = await crud.post("Users", null, user);
+  return savedUser;
 }
 
-app.post("/login", (req, res) => {
-  const user = checkUser(req.body.username, req.body.password);
+app.post("/login", async (req, res) => {
+  const user = await checkUser(req.body.CPF, req.body.Name, req.body.Password);
   res.send(user);
 });
 
-app.get("/user-list", (req, res) => {
-  res.send(userList);
-});
-
-function checkUser(username, password) {
-  const user = userList.find(
-    (user) => user.username === username && user.password === password
-  );
+async function checkUser(CPF, Name, Password) {
+  const user = await crud.get("Users", CPF);
   if (user) {
-    console.log(user);
-    return user;
+    if (user.Name == Name && user.Password == Password) {
+      return user;
+    } else {
+      return "User not found";
+    }
   } else {
     return "User not found";
   }
 }
+
+app.get("/user-list", (req, res) => {
+  crud.get("Users", null).then((users) => {
+    res.send(users);
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server A running on port ${port}`);
